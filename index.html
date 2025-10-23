@@ -551,6 +551,46 @@
             color: var(--primary);
         }
         
+        .whatsapp-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .whatsapp-modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            max-width: 90%;
+            max-height: 90%;
+            width: 500px;
+            text-align: center;
+        }
+        
+        .modal-title {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
         @media (max-width: 768px) {
             .size-options, .borda-options, .refri-options {
                 grid-template-columns: 1fr;
@@ -575,6 +615,10 @@
             }
             
             .pizza-type-selector {
+                flex-direction: column;
+            }
+            
+            .modal-buttons {
                 flex-direction: column;
             }
         }
@@ -628,7 +672,7 @@
             </div>
             
             <div class="navigation-buttons">
-                <div></div> <!-- Espaço vazio para alinhamento -->
+                <div></div>
                 <button class="btn" id="nextToStep2">Próximo</button>
             </div>
         </div>
@@ -746,7 +790,6 @@
             <div class="form-group">
                 <label class="form-label">Forma de Pagamento:</label>
                 <div class="radio-group">
-                    <!-- CORREÇÃO: Cartão vem primeiro -->
                     <label class="radio-option">
                         <input type="radio" name="paymentMethod" value="cartao" checked>
                         Cartão
@@ -792,6 +835,22 @@
                 <button class="btn btn-secondary" id="backToStep5">Voltar</button>
                 <button class="btn btn-whatsapp" id="finalizeOrder">
                     <span>Finalizar Pedido pelo WhatsApp</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para WhatsApp -->
+    <div class="whatsapp-modal" id="whatsappModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Abrir WhatsApp</h3>
+            <p>Seu pedido está pronto! Clique no botão abaixo para abrir o WhatsApp e enviar seu pedido.</p>
+            <p><small>Se o WhatsApp não abrir automaticamente, copie a mensagem e cole manualmente.</small></p>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="closeModal">Fechar</button>
+                <button class="btn btn-whatsapp" id="openWhatsApp">
+                    <span>Abrir WhatsApp</span>
                 </button>
             </div>
         </div>
@@ -848,13 +907,14 @@
                 orderType: "retirada",
                 address: "",
                 reference: "",
-                paymentMethod: "cartao", // CORREÇÃO: Cartão como padrão
+                paymentMethod: "cartao", // Cartão como padrão
                 changeFor: ""
             },
             total: 0
         };
 
         let currentPizzaCount = 1;
+        let whatsappURL = '';
 
         // Elementos DOM
         const step1 = document.getElementById('step1');
@@ -884,7 +944,7 @@
         const deliveryFeeNote = document.getElementById('deliveryFeeNote');
         const changeGroup = document.getElementById('changeGroup');
         const changeForEl = document.getElementById('changeFor');
-        
+
         // Navegação entre passos
         document.getElementById('nextToStep2').addEventListener('click', function() {
             if (!order.size) {
@@ -1058,7 +1118,7 @@
             });
         });
         
-        // Finalizar pedido
+        // Finalizar pedido - CORREÇÃO PARA iOS
         document.getElementById('finalizeOrder').addEventListener('click', function() {
             if (order.pizzas.length === 0) {
                 alert('Por favor, complete seu pedido antes de finalizar.');
@@ -1077,7 +1137,6 @@
             
             message += `*Pagamento:* ${getPaymentMethodText(order.customerInfo.paymentMethod)}\n`;
             
-            // CORREÇÃO: Incluir troco apenas se for pagamento em dinheiro
             if (order.customerInfo.paymentMethod === 'dinheiro') {
                 message += `*Troco para:* ${order.customerInfo.changeFor}\n`;
             }
@@ -1089,9 +1148,9 @@
             
             order.pizzas.forEach((pizza, index) => {
                 message += `${index + 1}. `;
-                if (pizza.type === 'whole') {
+                if (pizza.type === 'whole' && pizza.whole) {
                     message += `Inteira de ${pizza.whole.name}\n`;
-                } else if (pizza.type === 'half') {
+                } else if (pizza.type === 'half' && pizza.half1 && pizza.half2) {
                     message += `Metade ${pizza.half1.name} / Metade ${pizza.half2.name}\n`;
                 }
             });
@@ -1108,12 +1167,36 @@
             
             // Criar link do WhatsApp
             const whatsappNumber = "5531992382944";
-            const whatsappURL = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`;
+            whatsappURL = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`;
             
-            // Abrir WhatsApp em uma nova aba
-            window.open(whatsappURL, '_blank');
+            // Mostrar modal em vez de abrir diretamente (correção iOS)
+            document.getElementById('whatsappModal').classList.add('active');
         });
-        
+
+        // Abrir WhatsApp quando clicar no botão do modal
+        document.getElementById('openWhatsApp').addEventListener('click', function() {
+            // Método universal que funciona em iOS e Android
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            
+            if (isIOS) {
+                // Para iOS, usar window.location
+                window.location.href = whatsappURL;
+            } else {
+                // Para outros dispositivos, usar window.open
+                window.open(whatsappURL, '_blank');
+            }
+            
+            // Fechar modal após 2 segundos
+            setTimeout(() => {
+                document.getElementById('whatsappModal').classList.remove('active');
+            }, 2000);
+        });
+
+        // Fechar modal
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('whatsappModal').classList.remove('active');
+        });
+
         // Funções auxiliares
         function goToStep(step) {
             // Esconder todas as seções
