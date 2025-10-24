@@ -336,6 +336,16 @@
             background-color: rgba(0, 123, 255, 0.1);
         }
         
+        .no-drink-option {
+            background-color: #f8f9fa;
+            border-color: #6c757d !important;
+        }
+        
+        .no-drink-option.selected {
+            background-color: #e9ecef;
+            border-color: #495057 !important;
+        }
+        
         .refri-label {
             font-weight: bold;
             display: block;
@@ -590,6 +600,29 @@
             margin-top: 20px;
             justify-content: center;
         }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 0.9rem;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .selection-hint {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none;
+        }
         
         @media (max-width: 768px) {
             .size-options, .borda-options, .refri-options {
@@ -692,6 +725,10 @@
             <div id="pizzaSelectionArea">
                 <!-- Área onde as seleções de pizza serão adicionadas dinamicamente -->
             </div>
+
+            <div class="error-message" id="pizzaError">
+                Por favor, selecione todos os sabores necessários antes de continuar.
+            </div>
             
             <div class="navigation-buttons">
                 <button class="btn btn-secondary" id="backToStep1">Voltar</button>
@@ -714,31 +751,27 @@
             </div>
         </div>
         
-        <!-- Passo 4: Seleção de Refrigerantes -->
+        <!-- Passo 4: Seleção de Bebidas -->
         <div class="step-section" id="section4">
-            <h2 class="section-title">Deseja Adicionar Refrigerante?</h2>
-            <p>Selecione os refrigerantes que deseja incluir no pedido:</p>
+            <h2 class="section-title">Deseja Adicionar Bebidas?</h2>
+            <p>Selecione as bebidas que deseja incluir no pedido:</p>
             
             <div class="refri-options">
-                <div class="refri-option" data-name="Coca Zero 1L" data-price="12.00">
-                    <span class="refri-label">Coca Zero 1L</span>
-                    <div class="refri-price">R$ 12,00</div>
+                <div class="refri-option" data-name="Coca-Cola 2L" data-price="15.00">
+                    <span class="refri-label">Coca-Cola 2L</span>
+                    <div class="refri-price">R$ 15,00</div>
                 </div>
-                <div class="refri-option" data-name="Coca-Cola 1L" data-price="12.00">
-                    <span class="refri-label">Coca-Cola 1L</span>
-                    <div class="refri-price">R$ 12,00</div>
+                <div class="refri-option" data-name="Coca-Cola Zero 2L" data-price="15.00">
+                    <span class="refri-label">Coca-Cola Zero 2L</span>
+                    <div class="refri-price">R$ 15,00</div>
                 </div>
                 <div class="refri-option" data-name="Guaraná 2L" data-price="15.00">
                     <span class="refri-label">Guaraná 2L</span>
                     <div class="refri-price">R$ 15,00</div>
                 </div>
-                <div class="refri-option" data-name="Coca Zero 2L" data-price="15.00">
-                    <span class="refri-label">Coca Zero 2L</span>
-                    <div class="refri-price">R$ 15,00</div>
-                </div>
-                <div class="refri-option" data-name="Coca-Cola 2L" data-price="15.00">
-                    <span class="refri-label">Coca-Cola 2L</span>
-                    <div class="refri-price">R$ 15,00</div>
+                <div class="refri-option no-drink-option" data-name="Não desejo bebidas" data-price="0.00">
+                    <span class="refri-label">Não desejo bebidas</span>
+                    <div class="refri-price">-</div>
                 </div>
             </div>
             
@@ -784,7 +817,8 @@
             <div class="form-group hidden" id="deliveryAddressGroup">
                 <label class="form-label">Endereço de Entrega:</label>
                 <input type="text" class="form-control" id="deliveryAddress" placeholder="Rua, número, bairro">
-                <input type="text" class="form-control" id="deliveryReference" placeholder="Ponto de referência" style="margin-top: 10px;">
+                <input type="text" class="form-control" id="deliveryReference" placeholder="Ponto de referência (opcional)" style="margin-top: 10px;">
+                <div class="selection-hint">Apenas o endereço é obrigatório. A referência é opcional.</div>
             </div>
             
             <div class="form-group">
@@ -840,6 +874,11 @@
         </div>
     </div>
 
+    <!-- Rodapé com créditos -->
+    <div class="footer">
+        Desenvolvido por <strong>AMX Labs</strong>
+    </div>
+
     <!-- Modal para WhatsApp -->
     <div class="whatsapp-modal" id="whatsappModal">
         <div class="modal-content">
@@ -878,18 +917,9 @@
             { name: "Banana", ingredients: "Mussarela, banana e canela" }
         ];
 
-        // Dados dos refrigerantes
-        const refrigerantes = [
-            { name: "Coca Zero 1L", price: 12.00 },
-            { name: "Coca-Cola 1L", price: 12.00 },
-            { name: "Guaraná 2L", price: 15.00 },
-            { name: "Coca Zero 2L", price: 15.00 },
-            { name: "Coca-Cola 2L", price: 15.00 }
-        ];
-
-        // Preços da borda por tamanho (conforme versão 1.0)
+        // Preços da borda por tamanho
         const bordaPrices = {
-            "PP": 0, // Não tem borda recheada para PP
+            "PP": 0,
             "M": 8.00,
             "G": 10.00,
             "GG": 15.00
@@ -907,7 +937,7 @@
                 orderType: "retirada",
                 address: "",
                 reference: "",
-                paymentMethod: "cartao", // Cartão como padrão
+                paymentMethod: "cartao",
                 changeFor: ""
             },
             total: 0
@@ -938,6 +968,7 @@
         const orderTotalEl = document.getElementById('orderTotal');
         const currentTotalValue = document.getElementById('currentTotalValue');
         const bordaOptionsEl = document.getElementById('bordaOptions');
+        const pizzaError = document.getElementById('pizzaError');
         
         const customerNameEl = document.getElementById('customerName');
         const deliveryAddressGroup = document.getElementById('deliveryAddressGroup');
@@ -961,11 +992,31 @@
         });
         
         document.getElementById('nextToStep3').addEventListener('click', function() {
-            if (order.pizzas.length === 0) {
-                alert('Por favor, selecione pelo menos um sabor para sua pizza.');
+            // VALIDAÇÃO MELHORADA: Verificar se todas as pizzas têm sabores selecionados corretamente
+            let allPizzasValid = true;
+            
+            for (let i = 0; i < order.pizzas.length; i++) {
+                const pizza = order.pizzas[i];
+                
+                if (pizza.type === 'whole' && !pizza.whole) {
+                    allPizzasValid = false;
+                    break;
+                } else if (pizza.type === 'half' && (!pizza.half1 || !pizza.half2)) {
+                    allPizzasValid = false;
+                    break;
+                } else if (pizza.type === 'half' && pizza.half1 && pizza.half2 && pizza.half1.name === pizza.half2.name) {
+                    allPizzasValid = false;
+                    break;
+                }
+            }
+            
+            if (!allPizzasValid) {
+                pizzaError.style.display = 'block';
+                pizzaError.scrollIntoView({ behavior: 'smooth' });
                 return;
             }
             
+            pizzaError.style.display = 'none';
             goToStep(3);
             renderBordaOptions();
         });
@@ -1003,14 +1054,13 @@
                 return;
             }
             
+            // MELHORIA: Referência não é mais obrigatória, apenas endereço
             if (order.customerInfo.orderType === 'entrega' && 
-                (!document.getElementById('deliveryAddress').value.trim() || 
-                 !document.getElementById('deliveryReference').value.trim())) {
-                alert('Por favor, preencha o endereço completo e ponto de referência para entrega.');
+                !document.getElementById('deliveryAddress').value.trim()) {
+                alert('Por favor, preencha o endereço para entrega.');
                 return;
             }
             
-            // CORREÇÃO: Troco é obrigatório apenas para pagamento em dinheiro
             if (order.customerInfo.paymentMethod === 'dinheiro' && 
                 !changeForEl.value.trim()) {
                 alert('Por favor, informe para quanto precisa de troco.');
@@ -1080,12 +1130,11 @@
             });
         });
         
-        // CORREÇÃO: Controle de forma de pagamento - troco aparece apenas para dinheiro
+        // Controle de forma de pagamento
         document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 order.customerInfo.paymentMethod = this.value;
                 
-                // Mostrar campo de troco apenas para pagamento em dinheiro
                 if (this.value === 'dinheiro') {
                     changeGroup.classList.remove('hidden');
                 } else {
@@ -1094,23 +1143,37 @@
             });
         });
         
-        // Seleção de refrigerantes
+        // MELHORIA: Seleção de bebidas simplificada
         document.querySelectorAll('.refri-option').forEach(option => {
             option.addEventListener('click', function() {
-                this.classList.toggle('selected');
-                
                 const refriName = this.getAttribute('data-name');
                 const refriPrice = parseFloat(this.getAttribute('data-price'));
                 
-                // Verificar se já está no pedido
-                const existingIndex = order.refrigerantes.findIndex(r => r.name === refriName);
-                
-                if (existingIndex !== -1) {
-                    // Remover se já estiver selecionado
-                    order.refrigerantes.splice(existingIndex, 1);
+                // Se for "Não desejo bebidas", limpar todas as seleções
+                if (refriName === "Não desejo bebidas") {
+                    order.refrigerantes = [];
+                    document.querySelectorAll('.refri-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
                 } else {
-                    // Adicionar se não estiver selecionado
-                    order.refrigerantes.push({ name: refriName, price: refriPrice });
+                    // Remover seleção de "Não desejo bebidas" se selecionar outra opção
+                    document.querySelectorAll('.refri-option.no-drink-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    
+                    // Verificar se já está selecionado
+                    const existingIndex = order.refrigerantes.findIndex(r => r.name === refriName);
+                    
+                    if (existingIndex !== -1) {
+                        // Remover se já estiver selecionado
+                        order.refrigerantes.splice(existingIndex, 1);
+                        this.classList.remove('selected');
+                    } else {
+                        // Adicionar se não estiver selecionado
+                        order.refrigerantes.push({ name: refriName, price: refriPrice });
+                        this.classList.add('selected');
+                    }
                 }
                 
                 renderRefriSelection();
@@ -1118,7 +1181,7 @@
             });
         });
         
-        // Finalizar pedido - CORREÇÃO PARA iOS
+        // Finalizar pedido
         document.getElementById('finalizeOrder').addEventListener('click', function() {
             if (order.pizzas.length === 0) {
                 alert('Por favor, complete seu pedido antes de finalizar.');
@@ -1132,7 +1195,9 @@
             
             if (order.customerInfo.orderType === 'entrega') {
                 message += `*Endereço:* ${order.customerInfo.address}\n`;
-                message += `*Referência:* ${order.customerInfo.reference}\n`;
+                if (order.customerInfo.reference) {
+                    message += `*Referência:* ${order.customerInfo.reference}\n`;
+                }
             }
             
             message += `*Pagamento:* ${getPaymentMethodText(order.customerInfo.paymentMethod)}\n`;
@@ -1155,8 +1220,8 @@
                 }
             });
             
-            if (order.refrigerantes.length > 0) {
-                message += `\n*Refrigerantes:*\n`;
+            if (order.refrigerantes.length > 0 && order.refrigerantes[0].name !== "Não desejo bebidas") {
+                message += `\n*Bebidas:*\n`;
                 order.refrigerantes.forEach(refri => {
                     message += `• ${refri.name} - R$ ${refri.price.toFixed(2).replace('.', ',')}\n`;
                 });
@@ -1169,24 +1234,20 @@
             const whatsappNumber = "5531992382944";
             whatsappURL = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`;
             
-            // Mostrar modal em vez de abrir diretamente (correção iOS)
+            // Mostrar modal
             document.getElementById('whatsappModal').classList.add('active');
         });
 
         // Abrir WhatsApp quando clicar no botão do modal
         document.getElementById('openWhatsApp').addEventListener('click', function() {
-            // Método universal que funciona em iOS e Android
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             
             if (isIOS) {
-                // Para iOS, usar window.location
                 window.location.href = whatsappURL;
             } else {
-                // Para outros dispositivos, usar window.open
                 window.open(whatsappURL, '_blank');
             }
             
-            // Fechar modal após 2 segundos
             setTimeout(() => {
                 document.getElementById('whatsappModal').classList.remove('active');
             }, 2000);
@@ -1261,6 +1322,7 @@
                 pizzaSelection.className = 'pizza-selection';
                 pizzaSelection.innerHTML = `
                     <h3 style="margin: 20px 0 10px; color: var(--primary);">Pizza ${i+1}</h3>
+                    <div class="selection-hint">${i === 0 ? 'Selecione o tipo e os sabores da pizza' : ''}</div>
                     <div class="pizza-type-selector">
                         <div class="type-option" data-type="whole" data-pizza="${i}">
                             Pizza Inteira
@@ -1272,6 +1334,7 @@
                     <div class="whole-pizza-container hidden" id="wholePizza${i}">
                         <div class="whole-pizza-title">Sabor Inteiro</div>
                         <div class="selected-pizza-name" id="wholePizzaName${i}">Clique para selecionar</div>
+                        <div class="selection-hint">Selecione 1 sabor para a pizza inteira</div>
                     </div>
                     <div class="half-pizza-container hidden" id="halfPizza${i}">
                         <div class="half-pizza" data-half="1" data-pizza="${i}">
@@ -1282,6 +1345,7 @@
                             <div class="half-pizza-title">Metade 2</div>
                             <div class="selected-pizza-name" id="pizza${i}half2">Clique para selecionar</div>
                         </div>
+                        <div class="selection-hint" style="padding: 10px; text-align: center;">Selecione 2 sabores diferentes para as metades</div>
                     </div>
                 `;
                 
@@ -1289,7 +1353,7 @@
                 
                 // Inicializar pizza no pedido
                 order.pizzas.push({ 
-                    type: 'whole', // Padrão: pizza inteira
+                    type: 'whole',
                     whole: null,
                     half1: null,
                     half2: null
@@ -1394,13 +1458,13 @@
         function renderRefriSelection() {
             refriSelectionArea.innerHTML = '';
             
-            if (order.refrigerantes.length === 0) {
-                refriSelectionArea.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">Nenhum refrigerante selecionado</p>';
+            if (order.refrigerantes.length === 0 || order.refrigerantes[0].name === "Não desejo bebidas") {
+                refriSelectionArea.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">Nenhuma bebida selecionada</p>';
                 return;
             }
             
             const refriList = document.createElement('div');
-            refriList.innerHTML = '<h3 style="margin: 20px 0 10px; color: var(--primary);">Refrigerantes Selecionados:</h3>';
+            refriList.innerHTML = '<h3 style="margin: 20px 0 10px; color: var(--primary);">Bebidas Selecionadas:</h3>';
             
             order.refrigerantes.forEach(refri => {
                 const refriItem = document.createElement('div');
@@ -1426,9 +1490,11 @@
             // Adicionar borda recheada (se selecionada)
             total += order.borda.price * currentPizzaCount;
             
-            // Adicionar refrigerantes
+            // Adicionar refrigerantes (exceto "Não desejo bebidas")
             order.refrigerantes.forEach(refri => {
-                total += refri.price;
+                if (refri.name !== "Não desejo bebidas") {
+                    total += refri.price;
+                }
             });
             
             // Adicionar taxa de entrega se for o caso
@@ -1485,10 +1551,18 @@
                     } else if (type === 'half') {
                         if (halfNum === 1) {
                             order.pizzas[pizzaIndex].half1 = pizza;
+                            document.getElementById(`pizza${pizzaIndex}half1`).textContent = pizzaName;
                         } else {
                             order.pizzas[pizzaIndex].half2 = pizza;
+                            document.getElementById(`pizza${pizzaIndex}half2`).textContent = pizzaName;
                         }
-                        document.getElementById(`pizza${pizzaIndex}half${halfNum}`).textContent = pizzaName;
+                        
+                        // VALIDAÇÃO: Verificar se os dois sabores são iguais
+                        if (order.pizzas[pizzaIndex].half1 && order.pizzas[pizzaIndex].half2 && 
+                            order.pizzas[pizzaIndex].half1.name === order.pizzas[pizzaIndex].half2.name) {
+                            alert('Por favor, selecione sabores diferentes para as duas metades.');
+                            return;
+                        }
                     }
                     
                     // Fechar o modal
@@ -1532,18 +1606,20 @@
                 order.total += order.borda.price;
             }
             
-            // Adicionar refrigerantes
+            // Adicionar refrigerantes (exceto "Não desejo bebidas")
             order.refrigerantes.forEach(refri => {
-                const refriItem = document.createElement('div');
-                refriItem.className = 'order-item';
-                refriItem.innerHTML = `
-                    <div class="order-item-details">
-                        <div class="order-item-name">${refri.name}</div>
-                    </div>
-                    <div class="order-item-price">R$ ${refri.price.toFixed(2).replace('.', ',')}</div>
-                `;
-                orderItemsEl.appendChild(refriItem);
-                order.total += refri.price;
+                if (refri.name !== "Não desejo bebidas") {
+                    const refriItem = document.createElement('div');
+                    refriItem.className = 'order-item';
+                    refriItem.innerHTML = `
+                        <div class="order-item-details">
+                            <div class="order-item-name">${refri.name}</div>
+                        </div>
+                        <div class="order-item-price">R$ ${refri.price.toFixed(2).replace('.', ',')}</div>
+                    `;
+                    orderItemsEl.appendChild(refriItem);
+                    order.total += refri.price;
+                }
             });
             
             // Adicionar taxa de entrega se for o caso
