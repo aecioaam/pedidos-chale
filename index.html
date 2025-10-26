@@ -514,6 +514,23 @@
             outline: none;
         }
         
+        .textarea-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        
+        .textarea-control:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        
         .radio-group {
             display: flex;
             gap: 20px;
@@ -843,6 +860,13 @@
                 <label class="form-label">Precisa de troco? Se sim, para quanto?</label>
                 <input type="text" class="form-control" id="changeFor" placeholder="Ex: R$ 50,00">
             </div>
+
+            <!-- NOVO CAMPO: Observações -->
+            <div class="form-group">
+                <label class="form-label">Observações (opcional):</label>
+                <textarea class="textarea-control" id="observations" placeholder="Ex: sem cebola, sem pimentão, ponto da massa..."></textarea>
+                <div class="selection-hint">Informe aqui qualquer observação especial sobre seu pedido</div>
+            </div>
             
             <div class="navigation-buttons">
                 <button class="btn btn-secondary" id="backToStep4">Voltar</button>
@@ -938,7 +962,8 @@
                 address: "",
                 reference: "",
                 paymentMethod: "cartao",
-                changeFor: ""
+                changeFor: "",
+                observations: "" // NOVO CAMPO: observações
             },
             total: 0
         };
@@ -975,6 +1000,7 @@
         const deliveryFeeNote = document.getElementById('deliveryFeeNote');
         const changeGroup = document.getElementById('changeGroup');
         const changeForEl = document.getElementById('changeFor');
+        const observationsEl = document.getElementById('observations'); // NOVO ELEMENTO
 
         // Navegação entre passos
         document.getElementById('nextToStep2').addEventListener('click', function() {
@@ -1072,6 +1098,7 @@
             order.customerInfo.address = document.getElementById('deliveryAddress').value.trim();
             order.customerInfo.reference = document.getElementById('deliveryReference').value.trim();
             order.customerInfo.changeFor = changeForEl.value.trim();
+            order.customerInfo.observations = observationsEl.value.trim(); // SALVAR OBSERVAÇÕES
             
             goToStep(6);
             renderOrderSummary();
@@ -1208,7 +1235,8 @@
             
             message += `\n*Detalhes do Pedido:*\n`;
             message += `*Tamanho:* ${order.size}\n`;
-            message += `*Borda:* ${order.borda.type === 'normal' ? 'Normal' : 'Recheada'}${order.borda.price > 0 ? ` (+R$ ${order.borda.price.toFixed(2).replace('.', ',')})` : ''}\n\n`;
+            // MELHORIA: Alterado para "Borda Recheada (Catupiry)"
+            message += `*Borda:* ${order.borda.type === 'normal' ? 'Normal' : 'Recheada (Catupiry)'}${order.borda.price > 0 ? ` (+R$ ${order.borda.price.toFixed(2).replace('.', ',')})` : ''}\n\n`;
             message += `*Pizzas:*\n`;
             
             order.pizzas.forEach((pizza, index) => {
@@ -1226,8 +1254,16 @@
                     message += `• ${refri.name} - R$ ${refri.price.toFixed(2).replace('.', ',')}\n`;
                 });
             }
+
+            // NOVO: Adicionar observações se existirem
+            if (order.customerInfo.observations) {
+                message += `\n*Observações:*\n`;
+                message += `${order.customerInfo.observations}\n`;
+            }
             
             message += `\n*Total: R$ ${order.total.toFixed(2).replace('.', ',')}*\n\n`;
+            // MELHORIA: Adicionar "Aguarde confirmação do pedido" em negrito
+            message += `*Aguarde confirmação do pedido!*\n\n`;
             message += `_Por favor, confirme este pedido!_`;
             
             // Criar link do WhatsApp
@@ -1432,8 +1468,9 @@
                 recheadaOption.className = `borda-option ${order.borda.type === 'recheada' ? 'selected' : ''}`;
                 recheadaOption.setAttribute('data-type', 'recheada');
                 recheadaOption.setAttribute('data-price', bordaPrice.toFixed(2));
+                // MELHORIA: Alterado para "Borda Recheada (Catupiry)"
                 recheadaOption.innerHTML = `
-                    <span class="borda-label">Borda Recheada</span>
+                    <span class="borda-label">Borda Recheada (Catupiry)</span>
                     <div class="borda-price">R$ ${bordaPrice.toFixed(2).replace('.', ',')}</div>
                 `;
                 bordaOptionsEl.appendChild(recheadaOption);
@@ -1596,9 +1633,10 @@
             if (order.borda.type === 'recheada') {
                 const bordaItem = document.createElement('div');
                 bordaItem.className = 'order-item';
+                // MELHORIA: Alterado para "Borda Recheada (Catupiry)"
                 bordaItem.innerHTML = `
                     <div class="order-item-details">
-                        <div class="order-item-name">Borda Recheada</div>
+                        <div class="order-item-name">Borda Recheada (Catupiry)</div>
                     </div>
                     <div class="order-item-price">R$ ${order.borda.price.toFixed(2).replace('.', ',')}</div>
                 `;
@@ -1660,6 +1698,20 @@
                 
                 orderItemsEl.appendChild(pizzaItem);
             });
+
+            // NOVO: Adicionar observações se existirem
+            if (order.customerInfo.observations) {
+                const observationsItem = document.createElement('div');
+                observationsItem.className = 'order-item';
+                observationsItem.innerHTML = `
+                    <div class="order-item-details">
+                        <div class="order-item-name">Observações</div>
+                        <div class="order-item-desc">${order.customerInfo.observations}</div>
+                    </div>
+                    <div class="order-item-price">-</div>
+                `;
+                orderItemsEl.appendChild(observationsItem);
+            }
             
             // Multiplicar pelo número de pizzas
             order.total *= currentPizzaCount;
